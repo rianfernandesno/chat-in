@@ -1,7 +1,9 @@
 package com.yui.chat_in.service;
 
+import com.yui.chat_in.service.exceptions.GeminiException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
 
@@ -29,21 +31,31 @@ public class GeminiService {
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                URL,
-                HttpMethod.POST,
-                request,
-                Map.class
-        );
+        try{
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    URL,
+                    HttpMethod.POST,
+                    request,
+                    Map.class
+            );
 
+            List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.getBody().get("candidates");
+            if (candidates != null && !candidates.isEmpty()) {
+                Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
+                List<Map<String, Object>> partsList = (List<Map<String, Object>>) content.get("parts");
+                return (String) partsList.get(0).get("text");
+            }
 
-        List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.getBody().get("candidates");
-        if (candidates != null && !candidates.isEmpty()) {
-            Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
-            List<Map<String, Object>> partsList = (List<Map<String, Object>>) content.get("parts");
-            return (String) partsList.get(0).get("text");
+            return "Sem resposta.";
+
+        }catch (HttpServerErrorException e){
+            if (e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE) {
+                return "O modelo está temporariamente indisponível. Tente novamente mais tarde.";
+            }
+            throw new GeminiException("O recurso está indisponível no momento");
         }
 
-        return "Sem resposta.";
+
+
     }
 }

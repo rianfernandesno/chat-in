@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 
 @RestController
 @RequestMapping("/answer")
@@ -16,8 +15,8 @@ public class GeminiController {
     private GeminiService geminiService;
 
     @PostMapping
-    public ResponseEntity<Map<String, String>> toAsk(@RequestBody GeminiPrompt prompt) {
+    public ResponseEntity<String> toAsk(@RequestBody GeminiPrompt prompt) {
         String ask = geminiService.generate(prompt.getPrompt());
-        return ResponseEntity.ok(Map.of("resposta", ask));
+        return ResponseEntity.ok().body(ask);
     }
 }
